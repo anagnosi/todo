@@ -93,6 +93,32 @@ def mark_done(path: Path, task_id: int) -> None:
     print(f"Traité : [{rows[idx]['id']}] {rows[idx]['task']}")
 
 
+def edit_task(path: Path, task_id: int, task: str | None, priority: int | None) -> None:
+    rows = read_list(path)
+    idx = find_row(rows, task_id)
+    if idx < 0:
+        print(f"ID {task_id} introuvable.", file=sys.stderr)
+        sys.exit(1)
+
+    if task is None:
+        task = input(f"Nouvelle description [{rows[idx]['task']}]: ").strip() or rows[idx]["task"]
+    if priority is None:
+        prio_str = input(f"Nouvelle priorité [{rows[idx]['priority']}]: ").strip()
+        if prio_str:
+            try:
+                priority = int(prio_str)
+            except ValueError:
+                print("Priorité doit être un entier.", file=sys.stderr)
+                sys.exit(1)
+
+    rows[idx]["task"] = task
+    if priority is not None:
+        rows[idx]["priority"] = priority
+    rows[idx]["modified"] = now_iso()
+    write_list(path, rows)
+    print(f"Modifié : [{rows[idx]['id']}] {rows[idx]['task']} (priorité {rows[idx]['priority']})")
+
+
 def move_to_done_section(rows: list[dict]) -> list[dict]:
     """Réorganise la liste : TODO d'abord, DONE à la fin (ordre interne préservé)."""
     return [r for r in rows if r["status"] == STATUS_TODO] + \
@@ -144,6 +170,11 @@ def main() -> None:
     p_done = sub.add_parser("done", help="Marquer une tâche comme traitée")
     p_done.add_argument("id", type=int, help="ID de la tâche")
 
+    p_edit = sub.add_parser("edit", help="Modifier une tâche")
+    p_edit.add_argument("id", type=int, help="ID de la tâche")
+    p_edit.add_argument("-t", "--task", default=None, help="Nouvelle description")
+    p_edit.add_argument("-p", "--priority", type=int, default=None, help="Nouvelle priorité")
+
     p_list = sub.add_parser("list", help="Afficher la liste")
     p_list.add_argument("--status", choices=["TODO", "DONE"], default=None,
                         help="Filtrer par statut")
@@ -157,6 +188,8 @@ def main() -> None:
         add_task(path, args.task, args.priority)
     elif args.command == "done":
         mark_done(path, args.id)
+    elif args.command == "edit":
+        edit_task(path, args.id, args.task, args.priority)
     elif args.command == "list":
         list_tasks(path, args.status, args.sort)
 

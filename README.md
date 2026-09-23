@@ -109,6 +109,34 @@ Exemple :
 python3 todo.py ma_liste.list done 1
 ```
 
+### Modifier une tâche
+
+```bash
+python3 todo.py <liste>.list edit ID [-t NOUVELLE_DESCRIPTION] [-p NOUVELLE_PRIORITÉ]
+```
+
+- `ID` : identifiant de la tâche (entier)
+- `-t NOUVELLE_DESCRIPTION` ou `--task NOUVELLE_DESCRIPTION` : nouvelle description de la tâche
+- `-p NOUVELLE_PRIORITÉ` ou `--priority NOUVELLE_PRIORITÉ` : nouvelle priorité entière
+
+Si une option n'est pas fournie, le programme vous demande de la saisir
+interactivement (la valeur actuelle est proposée par défaut).
+
+Cette commande :
+
+1. Modifie la description et/ou la priorité de la tâche
+2. Met à jour sa `modified`
+
+Exemples :
+
+```bash
+# Modification complète via les options
+python3 todo.py ma_liste.list edit 2 -t "Répondre aux emails importants" -p 5
+
+# Mode interactif (on propose la valeur actuelle)
+python3 todo.py ma_liste.list edit 4
+```
+
 ## Résumé des commandes
 
 | Commande | Description |
@@ -116,6 +144,7 @@ python3 todo.py ma_liste.list done 1
 | `add "tâche" [-p N]` | Ajouter une tâche (priorité N, défaut 0) |
 | `list [--status S] [--sort C]` | Afficher la liste filtrée et triée |
 | `done ID` | Marquer la tâche ID comme traitée |
+| `edit ID [-t T] [-p P]` | Modifier la description et/ou la priorité de la tâche ID |
 
 ## Notes
 
