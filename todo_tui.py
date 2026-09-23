@@ -42,8 +42,41 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
 
 
 def draw_help(stdscr, width: int) -> None:
-    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | d: done | u: undone | Tab: TODO/DONE | q: quitter"
+    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | f: filtre catégorie | d: done | u: undone | Tab: TODO/DONE | q: quitter"
     stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
+
+
+def category_matches(task: dict, category_filter: str) -> bool:
+    pattern = category_filter.strip().strip("*")
+    category = task.get("category", "")
+    return not pattern or pattern.casefold() in (category or "").casefold()
+
+
+def prompt_category_filter(stdscr, current: str) -> str | None:
+    value = current
+    prompt = "Filtre catégorie (Entrée: appliquer, Échap: annuler): "
+    row = curses.LINES - 2
+
+    curses.curs_set(1)
+    while True:
+        stdscr.move(row, 0)
+        stdscr.clrtoeol()
+        stdscr.addnstr(row, 0, prompt + value, curses.COLS, curses.A_REVERSE)
+        stdscr.move(row, min(len(prompt) + len(value), curses.COLS - 1))
+        stdscr.refresh()
+
+        key = stdscr.get_wch()
+        if isinstance(key, str):
+            if key in ("\n", "\r"):
+                curses.curs_set(0)
+                return value.strip()
+            if key == "\x1b":
+                curses.curs_set(0)
+                return None
+            if key not in ("\b", "\x7f", "\t"):
+                value += key
+        elif key in (curses.KEY_BACKSPACE, 8, 127):
+            value = value[:-1]
 
 
 def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modification de la tâche") -> str | None:
@@ -346,14 +379,15 @@ def run_tui(path: Path) -> None:
         show_done = False
         sort_key = "id"
         sort_reverse = False
+        category_filter = ""
 
         while True:
             rows = core.sort_rows(core.read_list(path), sort_key, None)
             if sort_reverse:
                 rows.reverse()
             rows = core.move_to_done_section(rows)
-            todo_rows = [r for r in rows if r["status"] == core.STATUS_TODO]
-            done_rows = [r for r in rows if r["status"] == core.STATUS_DONE]
+            todo_rows = [r for r in rows if r["status"] == core.STATUS_TODO and category_matches(r, category_filter)]
+            done_rows = [r for r in rows if r["status"] == core.STATUS_DONE and category_matches(r, category_filter)]
             current = done_rows if show_done else todo_rows
 
             stdscr.erase()
@@ -367,6 +401,8 @@ def run_tui(path: Path) -> None:
             }
             direction = sort_directions[sort_key][sort_reverse]
             title += f" | Tri: {sort_labels[sort_key]} ({direction})"
+            if category_filter:
+                title += f" | Filtre: *{category_filter}*"
             draw_header(stdscr, title, curses.COLS)
             draw_help(stdscr, curses.COLS)
 
@@ -418,6 +454,11 @@ def run_tui(path: Path) -> None:
                     sort_key = "due_date"
                     sort_reverse = False
                 selected = 0
+            elif key == ord("f"):
+                new_filter = prompt_category_filter(stdscr, category_filter)
+                if new_filter is not None:
+                    category_filter = new_filter
+                    selected = 0
             elif key == ord("n"):
                 create_new_task(stdscr, path)
             elif key == ord("d") and current and not show_done:
