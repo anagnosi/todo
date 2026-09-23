@@ -8,7 +8,7 @@ Navigation au clavier :
 - u : marquer comme TODO (depuis DONE)
 - Tab : basculer entre les sections TODO et DONE
 - q : quitter
-- r : rafraîchir
+- r : trier les tâches réalisées
 """
 
 from __future__ import annotations
@@ -36,11 +36,13 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
         line += f" | {cat[:10]}"
     if due:
         line += f" | {due[:10]}"
+    if task.get("status") == core.STATUS_DONE and task.get("done_at"):
+        line += f" | Réalisée: {task['done_at'][:10]}"
     stdscr.addnstr(row, 0, line, width, attr)
 
 
 def draw_help(stdscr, width: int) -> None:
-    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | d: done | u: undone | Tab: TODO/DONE | q: quitter"
+    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | d: done | u: undone | Tab: TODO/DONE | q: quitter"
     stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
 
 
@@ -356,11 +358,12 @@ def run_tui(path: Path) -> None:
 
             stdscr.erase()
             title = "Tâches à traiter (TODO)" if not show_done else "Tâches traitées (DONE)"
-            sort_labels = {"id": "ID", "priority": "Priorité", "due_date": "Échéance"}
+            sort_labels = {"id": "ID", "priority": "Priorité", "due_date": "Échéance", "done_at": "Réalisée"}
             sort_directions = {
                 "id": ("croissant", "décroissant"),
                 "priority": ("décroissant", "croissant"),
                 "due_date": ("croissant", "décroissant"),
+                "done_at": ("décroissant", "croissant"),
             }
             direction = sort_directions[sort_key][sort_reverse]
             title += f" | Tri: {sort_labels[sort_key]} ({direction})"
@@ -388,7 +391,12 @@ def run_tui(path: Path) -> None:
                 show_done = not show_done
                 selected = 0
             elif key == ord("r"):
-                continue
+                if sort_key == "done_at":
+                    sort_reverse = not sort_reverse
+                else:
+                    sort_key = "done_at"
+                    sort_reverse = False
+                selected = 0
             elif key == ord("i"):
                 if sort_key == "id":
                     sort_reverse = not sort_reverse
