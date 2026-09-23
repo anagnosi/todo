@@ -1,5 +1,42 @@
-id,created,modified,priority,status,done_at,task
-1,2026-09-23T09:00:00,2026-09-23T09:00:00,3,TODO,,Acheter du pain
-2,2026-09-23T09:05:00,2026-09-23T09:41:14,5,TODO,,Répondre aux emails importants
-3,2026-09-23T09:10:00,2026-09-23T09:15:00,5,DONE,2026-09-23T09:15:00,Préparer le rapport
-4,2026-09-23T09:20:00,2026-09-23T09:20:00,2,TODO,,Faire le café
+[
+  {
+    "id": "1",
+    "created": "2026-09-23T09:00:00",
+    "modified": "2026-09-23T09:00:00",
+    "priority": 3,
+    "status": "TODO",
+    "done_at": "",
+    "category": "",
+    "task": "Acheter du pain"
+  },
+  {
+    "id": "2",
+    "created": "2026-09-23T09:05:00",
+    "modified": "2026-09-23T09:05:00",
+    "priority": 1,
+    "status": "TODO",
+    "done_at": "",
+    "category": "",
+    "task": "Répondre aux emails"
+  },
+  {
+    "id": "3",
+    "created": "2026-09-23T09:10:00",
+    "modified": "2026-09-23T09:15:00",
+    "priority": 5,
+    "status": "DONE",
+    "done_at": "2026-09-23T09:15:00",
+    "category": "",
+    "task": "Préparer le rapport"
+  },
+  {
+    "id": "4",
+    "created": "2026-09-23T09:20:00",
+    "modified": "2026-09-23T09:20:00",
+    "priority": 2,
+    "status": "TODO",
+    "done_at": "",
+    "category": "",
+    "task": "Faire le café"
+  }
+]
