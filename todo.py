@@ -113,7 +113,8 @@ def read_multiline(prompt: str, default: str = "") -> str:
     return text if text else default
 
 
-def add_task(path: Path, task: str | None, priority: int, category: str | None, due_date: str | None) -> None:
+def add_task(path: Path, task: str | None, priority: int, category: str | None, due_date: str | None,
+             silent: bool = False) -> None:
     rows = read_list(path)
     ts = now_iso()
     if task is None:
@@ -134,7 +135,8 @@ def add_task(path: Path, task: str | None, priority: int, category: str | None, 
         "task": task,
     })
     write_list(path, rows)
-    print(f"Ajouté : [{rows[-1]['id']}] {task.splitlines()[0]} (priorité {priority})")
+    if not silent:
+        print(f"Ajouté : [{rows[-1]['id']}] {task.splitlines()[0]} (priorité {priority})")
 
 
 def mark_done(path: Path, task_id: int, silent: bool = False) -> None:

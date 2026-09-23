@@ -41,7 +41,7 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
 
 def draw_help(stdscr, width: int) -> None:
     help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | d: done | u: undone | Tab: TODO/DONE | q: quitter"
-    stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_NORMAL)
+    stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
 
 
 def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modification de la tâche") -> str | None:
@@ -309,7 +309,7 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
 
     if is_new:
         # Créer une nouvelle tâche
-        core.add_task(path, task["task"], task["priority"], task["category"], task["due_date"])
+        core.add_task(path, task["task"], task["priority"], task["category"], task["due_date"], silent=True)
     else:
         # Modifier une tâche existante
         rows = core.read_list(path)
@@ -406,9 +406,6 @@ def main() -> None:
         print("Usage: python3 todo_tui.py <fichier.list>", file=sys.stderr)
         sys.exit(1)
     path = Path(sys.argv[1])
-    if not path.exists():
-        print(f"Fichier introuvable : {path}", file=sys.stderr)
-        sys.exit(1)
     run_tui(path)
 
 
