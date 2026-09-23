@@ -43,6 +43,9 @@ Le fichier est au format JSON, une liste d'objets (une par tâche) :
 - `status` : `TODO` ou `DONE`
 - `done_at` : date de traitement (vide si la tâche n'est pas encore traitée)
 - `category` : catégorie (vide si aucune)
+- `due_date` : échéance (vide si aucune). Format accepté :
+    - `YYYY-MM-DD` (date seule)
+    - `YYYY-MM-DDTHH:MM:SS` (date + heure)
 - `task` : description de la tâche (peut contenir des retours à la ligne)
 
 ## Installation
@@ -58,13 +61,15 @@ chmod +x todo.py
 ### Ajouter une tâche
 
 ```bash
-python3 todo.py <liste>.list add ["Description de la tâche"] [-p PRIORITÉ] [-c CATÉGORIE]
+python3 todo.py <liste>.list add ["Description de la tâche"] [-p PRIORITÉ] [-c CATÉGORIE] [-d ÉCHÉANCE]
 ```
 
 - `Description de la tâche` : texte de la tâche (entre guillemets si il contient des espaces).
   La description peut contenir des retours à la ligne.
 - `-p PRIORITÉ` ou `--priority PRIORITÉ` : priorité entière (défaut `0`)
 - `-c CATÉGORIE` ou `--category CATÉGORIE` : catégorie (optionnelle)
+- `-d ÉCHÉANCE` ou `--due-date ÉCHÉANCE` : échéance (optionnelle).
+  Format accepté : `YYYY-MM-DD` (date seule) ou `YYYY-MM-DDTHH:MM:SS` (date + heure).
 
 Si la description n'est pas fournie, le programme passe en **mode interactif** : vous pouvez
 saisir plusieurs lignes, une ligne vide pour terminer.
@@ -75,8 +80,8 @@ Exemples :
 # Description simple
 python3 todo.py ma_liste.list add "Acheter du pain" -p 3
 
-# Avec catégorie
-python3 todo.py ma_liste.list add "Acheter du pain" -p 3 -c "courses"
+# Avec catégorie et échéance
+python3 todo.py ma_liste.list add "Acheter du pain" -p 3 -c "courses" -d "2026-09-25"
 
 # Description multi-ligne (avec retours à la ligne)
 python3 todo.py ma_liste.list add "Faire le rapport :
@@ -90,19 +95,22 @@ python3 todo.py ma_liste.list add -p 5
 ### Afficher la liste
 
 ```bash
-python3 todo.py <liste>.list list [--status TODO|DONE] [--category CATÉGORIE] [--sort CRITÈRE]
+python3 todo.py <liste>.list list [--status TODO|DONE] [--category CATÉGORIE] [--sort CRITÈRE] [--overdue] [--due-in JOURS]
 ```
 
 - `--status` : filtrer par statut (`TODO` ou `DONE`). Par défaut, les deux statuts sont affichés.
 - `--category` : filtrer par catégorie (optionnel)
 - `--sort` : critère de tri. Par défaut `created`.
+- `--overdue` : afficher uniquement les tâches en retard (échéance dépassée).
+- `--due-in JOURS` : afficher les tâches dont l'échéance est dans les prochains `JOURS` jours
+  (ou dépassées).
 
 Critères de tri disponibles :
 
-| Statut   | Critères disponibles                     |
-|----------|-------------------------------------------|
-| `TODO`   | `created`, `modified`, `priority`        |
-| `DONE`   | `created`, `done_at`, `priority`          |
+| Statut   | Critères disponibles                                  |
+|----------|-------------------------------------------------------|
+| `TODO`   | `created`, `modified`, `priority`, `due_date`        |
+| `DONE`   | `created`, `done_at`, `priority`                     |
 
 Exemples :
 
@@ -119,8 +127,14 @@ python3 todo.py ma_liste.list list --status DONE --sort done_at
 # Filtrer par catégorie
 python3 todo.py ma_liste.list list --category courses
 
-# Toutes les tâches, triées par date de modification
-python3 todo.py ma_liste.list list --sort modified
+# Tâches en retard
+python3 todo.py ma_liste.list list --overdue
+
+# Tâches dont l'échéance est dans les 7 jours (ou dépassées)
+python3 todo.py ma_liste.list list --due-in 7
+
+# Toutes les tâches, triées par échéance
+python3 todo.py ma_liste.list list --sort due_date
 ```
 
 ### Marquer une tâche comme traitée
@@ -146,13 +160,14 @@ python3 todo.py ma_liste.list done 1
 ### Modifier une tâche
 
 ```bash
-python3 todo.py <liste>.list edit ID [-t NOUVELLE_DESCRIPTION] [-p NOUVELLE_PRIORITÉ] [-c NOUVELLE_CATÉGORIE]
+python3 todo.py <liste>.list edit ID [-t NOUVELLE_DESCRIPTION] [-p NOUVELLE_PRIORITÉ] [-c NOUVELLE_CATÉGORIE] [-d NOUVELLE_ÉCHÉANCE]
 ```
 
 - `ID` : identifiant de la tâche (entier)
 - `-t NOUVELLE_DESCRIPTION` ou `--task NOUVELLE_DESCRIPTION` : nouvelle description de la tâche
 - `-p NOUVELLE_PRIORITÉ` ou `--priority NOUVELLE_PRIORITÉ` : nouvelle priorité entière
 - `-c NOUVELLE_CATÉGORIE` ou `--category NOUVELLE_CATÉGORIE` : nouvelle catégorie
+- `-d NOUVELLE_ÉCHÉANCE` ou `--due-date NOUVELLE_ÉCHÉANCE` : nouvelle échéance
 
 Si une option n'est pas fournie, le programme vous demande de la saisir
 interactivement. Pour la description, le mode interactif permet de saisir
@@ -161,14 +176,14 @@ proposée par défaut.
 
 Cette commande :
 
-1. Modifie la description, la priorité et/ou la catégorie de la tâche
+1. Modifie la description, la priorité, la catégorie et/ou l'échéance de la tâche
 2. Met à jour sa `modified`
 
 Exemples :
 
 ```bash
 # Modification complète via les options
-python3 todo.py ma_liste.list edit 2 -t "Répondre aux emails importants" -p 5 -c "personnel"
+python3 todo.py ma_liste.list edit 2 -t "Répondre aux emails importants" -p 5 -c "personnel" -d "2026-09-25"
 
 # Mode interactif (on propose la valeur actuelle)
 python3 todo.py ma_liste.list edit 4
@@ -178,10 +193,10 @@ python3 todo.py ma_liste.list edit 4
 
 | Commande | Description |
 |----------|-------------|
-| `add ["tâche"] [-p N] [-c CAT]` | Ajouter une tâche (priorité N, défaut 0) |
-| `list [--status S] [--category CAT] [--sort C]` | Afficher la liste filtrée et triée |
+| `add ["tâche"] [-p N] [-c CAT] [-d ÉCH]` | Ajouter une tâche (priorité N, défaut 0) |
+| `list [--status S] [--category CAT] [--sort C] [--overdue] [--due-in J]` | Afficher la liste filtrée et triée |
 | `done ID` | Marquer la tâche ID comme traitée |
-| `edit ID [-t T] [-p P] [-c CAT]` | Modifier la description, la priorité et/ou la catégorie de la tâche ID |
+| `edit ID [-t T] [-p P] [-c CAT] [-d ÉCH]` | Modifier la description, la priorité, la catégorie et/ou l'échéance de la tâche ID |
 
 ## Notes
 
