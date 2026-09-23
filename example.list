@@ -1,0 +1,5 @@
+id,created,modified,priority,status,done_at,task
+1,2026-09-23T09:00:00,2026-09-23T09:00:00,3,TODO,,Acheter du pain
+2,2026-09-23T09:05:00,2026-09-23T09:05:00,1,TODO,,Répondre aux emails
+3,2026-09-23T09:10:00,2026-09-23T09:15:00,5,DONE,2026-09-23T09:15:00,Préparer le rapport
+4,2026-09-23T09:20:00,2026-09-23T09:20:00,2,TODO,,Faire le café
