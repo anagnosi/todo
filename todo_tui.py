@@ -42,19 +42,26 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
 
 
 def draw_help(stdscr, width: int) -> None:
-    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | c: catégorie | d: done | u: undone | Tab: TODO/DONE | q: quitter"
+    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | c: catégorie | /: description | d: done | u: undone | Tab: TODO/DONE | q: quitter"
     stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
 
 
+def matches_occurrence(value: str | None, query: str) -> bool:
+    query = query.strip()
+    return not query or query.casefold() in (value or "").casefold()
+
+
 def category_matches(task: dict, category_filter: str) -> bool:
-    pattern = category_filter.strip()
-    category = task.get("category", "")
-    return not pattern or pattern.casefold() in (category or "").casefold()
+    return matches_occurrence(task.get("category"), category_filter)
 
 
-def prompt_category_filter(stdscr, current: str) -> str | None:
+def task_matches(task: dict, description_filter: str) -> bool:
+    return matches_occurrence(task.get("task"), description_filter)
+
+
+def prompt_filter(stdscr, current: str, label: str) -> str | None:
     value = current
-    prompt = "Filtre catégorie (Entrée: appliquer, Échap: annuler): "
+    prompt = f"{label} (Entrée: appliquer, Échap: annuler): "
     row = curses.LINES - 2
 
     curses.curs_set(1)
@@ -77,6 +84,14 @@ def prompt_category_filter(stdscr, current: str) -> str | None:
                 value += key
         elif key in (curses.KEY_BACKSPACE, 8, 127):
             value = value[:-1]
+
+
+def prompt_category_filter(stdscr, current: str) -> str | None:
+    return prompt_filter(stdscr, current, "Filtre catégorie")
+
+
+def prompt_task_filter(stdscr, current: str) -> str | None:
+    return prompt_filter(stdscr, current, "Recherche description")
 
 
 def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modification de la tâche") -> str | None:
@@ -380,14 +395,25 @@ def run_tui(path: Path) -> None:
         sort_key = "id"
         sort_reverse = False
         category_filter = ""
+        description_filter = ""
 
         while True:
             rows = core.sort_rows(core.read_list(path), sort_key, None)
             if sort_reverse:
                 rows.reverse()
             rows = core.move_to_done_section(rows)
-            todo_rows = [r for r in rows if r["status"] == core.STATUS_TODO and category_matches(r, category_filter)]
-            done_rows = [r for r in rows if r["status"] == core.STATUS_DONE and category_matches(r, category_filter)]
+            todo_rows = [
+                r for r in rows
+                if r["status"] == core.STATUS_TODO
+                and category_matches(r, category_filter)
+                and task_matches(r, description_filter)
+            ]
+            done_rows = [
+                r for r in rows
+                if r["status"] == core.STATUS_DONE
+                and category_matches(r, category_filter)
+                and task_matches(r, description_filter)
+            ]
             current = done_rows if show_done else todo_rows
 
             stdscr.erase()
@@ -402,7 +428,9 @@ def run_tui(path: Path) -> None:
             direction = sort_directions[sort_key][sort_reverse]
             title += f" | Tri: {sort_labels[sort_key]} ({direction})"
             if category_filter:
-                title += f" | Filtre: {category_filter}"
+                title += f" | Catégorie: {category_filter}"
+            if description_filter:
+                title += f" | Description: {description_filter}"
             draw_header(stdscr, title, curses.COLS)
             draw_help(stdscr, curses.COLS)
 
@@ -458,6 +486,11 @@ def run_tui(path: Path) -> None:
                 new_filter = prompt_category_filter(stdscr, category_filter)
                 if new_filter is not None:
                     category_filter = new_filter
+                    selected = 0
+            elif key == ord("/"):
+                new_filter = prompt_task_filter(stdscr, description_filter)
+                if new_filter is not None:
+                    description_filter = new_filter
                     selected = 0
             elif key == ord("n"):
                 create_new_task(stdscr, path)
