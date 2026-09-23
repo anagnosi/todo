@@ -14,11 +14,153 @@ Navigation au clavier :
 from __future__ import annotations
 
 import curses
+import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import todo as core
+
+STATUS_TODO = "TODO"
+STATUS_DONE = "DONE"
+
+
+def now_iso() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def parse_due_date(value: str) -> str | None:
+    if not value:
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    if len(value) == 10 and value[4] == "-" and value[7] == "-":
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+            return value
+        except ValueError:
+            return None
+    if len(value) == 19 and value[10] == "T":
+        try:
+            datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+            return value
+        except ValueError:
+            return None
+    if len(value) == 19 and value[10] == " ":
+        try:
+            datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            return value.replace(" ", "T")
+        except ValueError:
+            return None
+    print(f"Format d'échéance non reconnu : {value!r}. Utilisez YYYY-MM-DD ou YYYY-MM-DDTHH:MM:SS.",
+          file=sys.stderr)
+    return None
+
+
+def read_list(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    rows = data if isinstance(data, list) else []
+    for r in rows:
+        r.setdefault("category", "")
+        r.setdefault("due_date", "")
+    return rows
+
+
+def write_list(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(rows, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
+def next_id(rows: list[dict]) -> int:
+    ids = [int(r["id"]) for r in rows if str(r["id"]).isdigit()]
+    return max(ids) + 1 if ids else 1
+
+
+def find_row(rows: list[dict], task_id: int) -> int:
+    for i, r in enumerate(rows):
+        if int(r["id"]) == task_id:
+            return i
+    return -1
+
+
+def add_task(path: Path, task: str | None, priority: int, category: str | None, due_date: str | None,
+             silent: bool = False) -> None:
+    rows = read_list(path)
+    ts = now_iso()
+    if task is None:
+        raise ValueError("La description de la tâche est requise.")
+    due = parse_due_date(due_date) if due_date else ""
+    rows.append({
+        "id": str(next_id(rows)),
+        "created": ts,
+        "modified": ts,
+        "priority": priority,
+        "status": STATUS_TODO,
+        "done_at": "",
+        "category": category or "",
+        "due_date": due or "",
+        "task": task,
+    })
+    write_list(path, rows)
+    if not silent:
+        print(f"Ajouté : [{rows[-1]['id']}] {task.splitlines()[0]} (priorité {priority})")
+
+
+def mark_done(path: Path, task_id: int, silent: bool = False) -> None:
+    rows = read_list(path)
+    idx = find_row(rows, task_id)
+    if idx < 0:
+        print(f"ID {task_id} introuvable.", file=sys.stderr)
+        sys.exit(1)
+    rows[idx]["status"] = STATUS_DONE
+    rows[idx]["done_at"] = now_iso()
+    rows[idx]["modified"] = now_iso()
+    write_list(path, rows)
+    if not silent:
+        print(f"Traité : [{rows[idx]['id']}] {rows[idx]['task'].splitlines()[0]}")
+
+
+def unmark_done(path: Path, task_id: int, silent: bool = False) -> None:
+    rows = read_list(path)
+    idx = find_row(rows, task_id)
+    if idx < 0:
+        print(f"ID {task_id} introuvable.", file=sys.stderr)
+        sys.exit(1)
+    rows[idx]["status"] = STATUS_TODO
+    rows[idx]["done_at"] = ""
+    rows[idx]["modified"] = now_iso()
+    write_list(path, rows)
+    if not silent:
+        print(f"Non traité : [{rows[idx]['id']}] {rows[idx]['task'].splitlines()[0]}")
+
+
+def move_to_done_section(rows: list[dict]) -> list[dict]:
+    return [r for r in rows if r["status"] == STATUS_TODO] + \
+           [r for r in rows if r["status"] == STATUS_DONE]
+
+
+def sort_rows(rows: list[dict], sort_by: str, status: str | None) -> list[dict]:
+    if sort_by == "id":
+        key = lambda r: int(r["id"])
+    elif sort_by == "created":
+        key = lambda r: r["created"]
+    elif sort_by == "modified":
+        key = lambda r: r["modified"]
+    elif sort_by == "priority":
+        key = lambda r: -r["priority"]
+    elif sort_by == "done_at":
+        key = lambda r: r["done_at"]
+    elif sort_by == "due_date":
+        key = lambda r: r.get("due_date", "") or "9999"
+    else:
+        print(f"Critère de tri inconnu : {sort_by}", file=sys.stderr)
+        sys.exit(1)
+    return sorted(rows, key=key)
 
 
 def draw_header(stdscr, text: str, width: int) -> None:
@@ -36,7 +178,7 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
         line += f" | {cat[:10]}"
     if due:
         line += f" | {due[:10]}"
-    if task.get("status") == core.STATUS_DONE and task.get("done_at"):
+    if task.get("status") == STATUS_DONE and task.get("done_at"):
         line += f" | Réalisée: {task['done_at'][:10]}"
     stdscr.addnstr(row, 0, line, width, attr)
 
@@ -231,7 +373,7 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
     editing = False
 
     while True:
-        is_done = task.get("status") == core.STATUS_DONE
+        is_done = task.get("status") == STATUS_DONE
         meta_parts = [
             f"Créée: {task['created']}",
             f"Modifiée: {task['modified']}",
@@ -298,17 +440,17 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
         # Raccourcis d/u fonctionnels partout
         if key == ord("d") and not is_done:
             task_id = int(task["id"])
-            core.mark_done(path, task_id, silent=True)
-            task["status"] = core.STATUS_DONE
-            task["done_at"] = core.now_iso()
-            task["modified"] = core.now_iso()
+            mark_done(path, task_id, silent=True)
+            task["status"] = STATUS_DONE
+            task["done_at"] = now_iso()
+            task["modified"] = now_iso()
             continue
         elif key == ord("u") and is_done:
             task_id = int(task["id"])
-            core.unmark_done(path, task_id, silent=True)
-            task["status"] = core.STATUS_TODO
+            unmark_done(path, task_id, silent=True)
+            task["status"] = STATUS_TODO
             task["done_at"] = ""
-            task["modified"] = core.now_iso()
+            task["modified"] = now_iso()
             continue
 
         if editing and not is_done:
@@ -355,30 +497,30 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
         pass
     task["category"] = editable_fields[1][1]
     task["due_date"] = editable_fields[2][1]
-    task["modified"] = core.now_iso()
+    task["modified"] = now_iso()
 
     if is_new:
         # Créer une nouvelle tâche
-        core.add_task(path, task["task"], task["priority"], task["category"], task["due_date"], silent=True)
+        add_task(path, task["task"], task["priority"], task["category"], task["due_date"], silent=True)
     else:
         # Modifier une tâche existante
-        rows = core.read_list(path)
+        rows = read_list(path)
         for r in rows:
             if r["id"] == task["id"]:
                 r.update(task)
                 break
-        core.write_list(path, rows)
+        write_list(path, rows)
 
 
 def create_new_task(stdscr, path: Path) -> None:
     """Crée une nouvelle tâche avec un écran identique à l'édition."""
-    ts = core.now_iso()
+    ts = now_iso()
     new_task = {
         "id": "?",  # provisoire
         "created": ts,
         "modified": ts,
         "priority": 0,
-        "status": core.STATUS_TODO,
+        "status": STATUS_TODO,
         "done_at": "",
         "category": "",
         "due_date": "",
@@ -398,19 +540,19 @@ def run_tui(path: Path) -> None:
         description_filter = ""
 
         while True:
-            rows = core.sort_rows(core.read_list(path), sort_key, None)
+            rows = sort_rows(read_list(path), sort_key, None)
             if sort_reverse:
                 rows.reverse()
-            rows = core.move_to_done_section(rows)
+            rows = move_to_done_section(rows)
             todo_rows = [
                 r for r in rows
-                if r["status"] == core.STATUS_TODO
+                if r["status"] == STATUS_TODO
                 and category_matches(r, category_filter)
                 and task_matches(r, description_filter)
             ]
             done_rows = [
                 r for r in rows
-                if r["status"] == core.STATUS_DONE
+                if r["status"] == STATUS_DONE
                 and category_matches(r, category_filter)
                 and task_matches(r, description_filter)
             ]
@@ -497,14 +639,14 @@ def run_tui(path: Path) -> None:
             elif key == ord("d") and current and not show_done:
                 # Marquer comme DONE
                 task_id = int(current[selected]["id"])
-                core.mark_done(path, task_id, silent=True)
+                mark_done(path, task_id, silent=True)
                 if selected >= len(current) - 1:
                     selected = max(0, selected - 1)
             elif key == ord("u") and current and show_done:
                 # Marquer comme TODO et ouvrir les détails
                 task_id = int(current[selected]["id"])
-                core.unmark_done(path, task_id, silent=True)
-                rows = core.read_list(path)
+                unmark_done(path, task_id, silent=True)
+                rows = read_list(path)
                 for r in rows:
                     if r["id"] == current[selected]["id"]:
                         show_task_details(stdscr, r, path)
@@ -519,7 +661,7 @@ def run_tui(path: Path) -> None:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python3 todo_tui.py <fichier.list>", file=sys.stderr)
+        print(f"Usage: python3 {Path(sys.argv[0]).name} <fichier.list>", file=sys.stderr)
         sys.exit(1)
     path = Path(sys.argv[1])
     run_tui(path)
