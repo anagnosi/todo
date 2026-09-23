@@ -42,12 +42,12 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
 
 
 def draw_help(stdscr, width: int) -> None:
-    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | f: filtre catégorie | d: done | u: undone | Tab: TODO/DONE | q: quitter"
+    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | c: catégorie | d: done | u: undone | Tab: TODO/DONE | q: quitter"
     stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
 
 
 def category_matches(task: dict, category_filter: str) -> bool:
-    pattern = category_filter.strip().strip("*")
+    pattern = category_filter.strip()
     category = task.get("category", "")
     return not pattern or pattern.casefold() in (category or "").casefold()
 
@@ -402,7 +402,7 @@ def run_tui(path: Path) -> None:
             direction = sort_directions[sort_key][sort_reverse]
             title += f" | Tri: {sort_labels[sort_key]} ({direction})"
             if category_filter:
-                title += f" | Filtre: *{category_filter}*"
+                title += f" | Filtre: {category_filter}"
             draw_header(stdscr, title, curses.COLS)
             draw_help(stdscr, curses.COLS)
 
@@ -454,7 +454,7 @@ def run_tui(path: Path) -> None:
                     sort_key = "due_date"
                     sort_reverse = False
                 selected = 0
-            elif key == ord("f"):
+            elif key == ord("c"):
                 new_filter = prompt_category_filter(stdscr, category_filter)
                 if new_filter is not None:
                     category_filter = new_filter
