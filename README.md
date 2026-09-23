@@ -54,9 +54,33 @@ Aucune dépendance externe. Il suffit de disposer de Python 3.
 
 ```bash
 chmod +x todo.py
+chmod +x todo_tui.py
 ```
 
-## Utilisation
+## Interface graphique (TUI)
+
+Une interface en mode texte (curses) est disponible dans `todo_tui.py`.
+Elle réutilise le même moteur de stockage que le CLI.
+
+```bash
+python3 todo_tui.py <liste>.list
+```
+
+Navigation au clavier :
+
+- **Flèches haut/bas** : déplacer la sélection
+- **Entrée** : ouvrir l'écran de modification de la tâche
+- **Tab** : basculer entre les sections TODO et DONE
+- **q** : quitter
+
+L'écran de modification s'affiche champ par champ. Pour chaque champ :
+- Saisissez la valeur au clavier
+- **Entrée** pour valider et passer au champ suivant
+- **Échap** pour annuler la modification
+
+Les champs modifiables : description (avec retours à la ligne), priorité, catégorie, échéance.
+
+## Utilisation (CLI)
 
 ### Ajouter une tâche
 

@@ -137,7 +137,7 @@ def add_task(path: Path, task: str | None, priority: int, category: str | None, 
     print(f"Ajouté : [{rows[-1]['id']}] {task.splitlines()[0]} (priorité {priority})")
 
 
-def mark_done(path: Path, task_id: int) -> None:
+def mark_done(path: Path, task_id: int, silent: bool = False) -> None:
     rows = read_list(path)
     idx = find_row(rows, task_id)
     if idx < 0:
@@ -147,7 +147,22 @@ def mark_done(path: Path, task_id: int) -> None:
     rows[idx]["done_at"] = now_iso()
     rows[idx]["modified"] = now_iso()
     write_list(path, rows)
-    print(f"Traité : [{rows[idx]['id']}] {rows[idx]['task'].splitlines()[0]}")
+    if not silent:
+        print(f"Traité : [{rows[idx]['id']}] {rows[idx]['task'].splitlines()[0]}")
+
+
+def unmark_done(path: Path, task_id: int, silent: bool = False) -> None:
+    rows = read_list(path)
+    idx = find_row(rows, task_id)
+    if idx < 0:
+        print(f"ID {task_id} introuvable.", file=sys.stderr)
+        sys.exit(1)
+    rows[idx]["status"] = STATUS_TODO
+    rows[idx]["done_at"] = ""
+    rows[idx]["modified"] = now_iso()
+    write_list(path, rows)
+    if not silent:
+        print(f"Non traité : [{rows[idx]['id']}] {rows[idx]['task'].splitlines()[0]}")
 
 
 def edit_task(path: Path, task_id: int, task: str | None, priority: int | None, category: str | None, due_date: str | None) -> None:
