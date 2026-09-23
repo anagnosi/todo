@@ -40,7 +40,7 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
 
 
 def draw_help(stdscr, width: int) -> None:
-    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | d: done | u: undone | Tab: TODO/DONE | q: quitter"
+    help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | d: done | u: undone | Tab: TODO/DONE | q: quitter"
     stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
 
 
@@ -342,15 +342,28 @@ def run_tui(path: Path) -> None:
         curses.curs_set(0)
         selected = 0
         show_done = False
+        sort_key = "id"
+        sort_reverse = False
 
         while True:
-            rows = core.read_list(path)
+            rows = core.sort_rows(core.read_list(path), sort_key, None)
+            if sort_reverse:
+                rows.reverse()
+            rows = core.move_to_done_section(rows)
             todo_rows = [r for r in rows if r["status"] == core.STATUS_TODO]
             done_rows = [r for r in rows if r["status"] == core.STATUS_DONE]
             current = done_rows if show_done else todo_rows
 
             stdscr.erase()
             title = "Tâches à traiter (TODO)" if not show_done else "Tâches traitées (DONE)"
+            sort_labels = {"id": "ID", "priority": "Priorité", "due_date": "Échéance"}
+            sort_directions = {
+                "id": ("croissant", "décroissant"),
+                "priority": ("décroissant", "croissant"),
+                "due_date": ("croissant", "décroissant"),
+            }
+            direction = sort_directions[sort_key][sort_reverse]
+            title += f" | Tri: {sort_labels[sort_key]} ({direction})"
             draw_header(stdscr, title, curses.COLS)
             draw_help(stdscr, curses.COLS)
 
@@ -376,6 +389,27 @@ def run_tui(path: Path) -> None:
                 selected = 0
             elif key == ord("r"):
                 continue
+            elif key == ord("i"):
+                if sort_key == "id":
+                    sort_reverse = not sort_reverse
+                else:
+                    sort_key = "id"
+                    sort_reverse = False
+                selected = 0
+            elif key == ord("p"):
+                if sort_key == "priority":
+                    sort_reverse = not sort_reverse
+                else:
+                    sort_key = "priority"
+                    sort_reverse = False
+                selected = 0
+            elif key == ord("e"):
+                if sort_key == "due_date":
+                    sort_reverse = not sort_reverse
+                else:
+                    sort_key = "due_date"
+                    sort_reverse = False
+                selected = 0
             elif key == ord("n"):
                 create_new_task(stdscr, path)
             elif key == ord("d") and current and not show_done:

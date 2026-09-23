@@ -217,7 +217,9 @@ def move_to_done_section(rows: list[dict]) -> list[dict]:
 
 def sort_rows(rows: list[dict], sort_by: str, status: str | None) -> list[dict]:
     """Tri selon le critère, en fonction du statut."""
-    if sort_by == "created":
+    if sort_by == "id":
+        key = lambda r: int(r["id"])
+    elif sort_by == "created":
         key = lambda r: r["created"]
     elif sort_by == "modified":
         key = lambda r: r["modified"]
