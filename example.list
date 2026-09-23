@@ -2,18 +2,18 @@
   {
     "id": "1",
     "created": "2026-09-23T09:00:00",
-    "modified": "2026-09-23T15:05:58",
-    "priority": 1000,
+    "modified": "2026-09-23T09:00:00",
+    "priority": 3,
     "status": "TODO",
     "done_at": "",
-    "category": "STUDIO",
-    "due_date": "2029-09-31",
-    "task": "DIAG DPE + Mesurage loi Carrez\n\nMessage a envoyer en diagnostiqueur pour le DPE :\n\n  Je vais vendre mon studio. Est-ce qu'un DPE collectif de l'immeuble a Ã©tÃ© rÃ©alisÃ© rÃ©cemment et pouvez-vous me transmettre une copie ou les informations nÃ©cessaires au DPE de mon lot ?\n  Appelez/envoyez un mail au syndic pour demander s'il existe un DPE collectif rÃ©cent.\n  S'il existe, demandez-le vous-mÃªme.\n  Ensuite, contactez un diagnostiqueur certifiÃ© et donnez-lui le DPE collectif s'il existe.\n  Demandez-lui un DPE individuel pour votre studio destinÃ© Ã  la vente !\n"
+    "category": "",
+    "due_date": "",
+    "task": "Acheter du pain"
   },
   {
     "id": "2",
     "created": "2026-09-23T09:05:00",
-    "modified": "2026-09-23T15:38:58",
+    "modified": "2026-09-23T09:05:00",
     "priority": 1,
     "status": "TODO",
     "done_at": "",
@@ -24,18 +24,18 @@
   {
     "id": "3",
     "created": "2026-09-23T09:10:00",
-    "modified": "2026-09-23T15:07:47",
+    "modified": "2026-09-23T09:15:00",
     "priority": 5,
-    "status": "TODO",
-    "done_at": "",
+    "status": "DONE",
+    "done_at": "2026-09-23T09:15:00",
     "category": "",
     "due_date": "",
-    "task": "Préparer le rapport 12345678 1245789 12345678"
+    "task": "Préparer le rapport"
   },
   {
     "id": "4",
     "created": "2026-09-23T09:20:00",
-    "modified": "2026-09-23T14:40:10",
+    "modified": "2026-09-23T09:20:00",
     "priority": 2,
     "status": "TODO",
     "done_at": "",
@@ -46,23 +46,12 @@
   {
     "id": "5",
     "created": "2026-09-23T10:09:58",
-    "modified": "2026-09-23T14:26:34",
+    "modified": "2026-09-23T10:09:58",
     "priority": 2,
-    "status": "DONE",
-    "done_at": "2026-09-23T14:26:34",
+    "status": "TODO",
+    "done_at": "",
     "category": "test",
     "due_date": "2026-09-25",
     "task": "Tâche d'exemple"
-  },
-  {
-    "id": "6",
-    "created": "2026-09-23T15:07:12",
-    "modified": "2026-09-23T15:07:12",
-    "priority": 10,
-    "status": "TODO",
-    "done_at": "",
-    "category": "TEST",
-    "due_date": "2026-12-01",
-    "task": "TEST TST\nSTS ééé"
   }
 ]
