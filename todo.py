@@ -241,32 +241,96 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
     Les flèches de direction permettent de déplacer le curseur dans le texte.
     Retourne la nouvelle valeur de la description, ou None si annulée.
     """
-    value = task["task"]
-    # Position du curseur dans la valeur (ligne, colonne)
+    value = task.get("task") or ""
     lines = value.split("\n")
     cur_line = len(lines) - 1
     cur_col = len(lines[-1]) if lines else 0
+    top_visual = 0
     curses.curs_set(1)
 
-    while True:
-        win_h = curses.LINES - 2
-        win_w = curses.COLS - 2
-        win = curses.newwin(win_h, win_w, 1, 1)
-        win.box()
-        win.addnstr(0, 2, f"{title} [{task['id']}]", win_w - 4, curses.A_BOLD)
-        win.addnstr(win_h - 2, 2, "Entrée: saut de ligne | Tab: sauvegarder | Échap: annuler", win_w - 4, curses.A_REVERSE)
-        win.refresh()
+    def build_visual_lines(text_lines: list[str], width: int) -> tuple[list[int], list[int], list[tuple[int, int, str]]]:
+        chunks_per_line = [max(1, (len(line) + width - 1) // width) for line in text_lines]
+        chunks_before = []
+        visual_lines = []
+        visual_count = 0
+        for line_index, line in enumerate(text_lines):
+            chunks_before.append(visual_count)
+            for chunk_index in range(chunks_per_line[line_index]):
+                start = chunk_index * width
+                visual_lines.append((line_index, start, line[start:start + width]))
+            visual_count += chunks_per_line[line_index]
+        return chunks_per_line, chunks_before, visual_lines
 
-        edit_win = curses.newwin(win_h - 4, win_w - 4, 3, 2)
+    def cursor_visual_position(
+        text_lines: list[str],
+        chunks_per_line: list[int],
+        chunks_before: list[int],
+        line_index: int,
+        column: int,
+        width: int,
+    ) -> tuple[int, int]:
+        line_index = min(max(line_index, 0), len(text_lines) - 1)
+        column = min(max(column, 0), len(text_lines[line_index]))
+        chunk_index = min(column // width, chunks_per_line[line_index] - 1)
+        visual_index = chunks_before[line_index] + chunk_index
+        visual_column = min(column - chunk_index * width, width - 1)
+        return visual_index, visual_column
+
+    while True:
+        lines = value.split("\n")
+        if not lines:
+            lines = [""]
+        win_h = max(5, curses.LINES - 2)
+        win_w = max(10, curses.COLS - 2)
+        win = curses.newwin(win_h, win_w, 1, 1)
+        help_text = f"Entrée: saut de ligne | Tab: sauvegarder | Échap: annuler | Ligne {cur_line + 1}/{len(lines)}"
+        try:
+            win.box()
+            win.addnstr(0, 2, f"{title} [{task['id']}]", win_w - 4, curses.A_BOLD)
+            win.addnstr(win_h - 2, 2, help_text, win_w - 4, curses.A_REVERSE)
+            win.refresh()
+        except curses.error:
+            pass
+
+        edit_h = max(1, win_h - 4)
+        edit_w = max(1, win_w - 4)
+        edit_win = curses.newwin(edit_h, edit_w, 3, 2)
         edit_win.keypad(True)
 
-        edit_win.erase()
-        lines = value.split("\n")
-        for i, line in enumerate(lines[:win_h - 5]):
-            edit_win.addnstr(i, 0, line, win_w - 4)
-        edit_win.refresh()
+        cur_line = min(max(cur_line, 0), len(lines) - 1)
+        cur_col = min(max(cur_col, 0), len(lines[cur_line]))
 
-        edit_win.move(min(cur_line, win_h - 6), min(cur_col, win_w - 5))
+        chunks_per_line, chunks_before, visual_lines = build_visual_lines(lines, edit_w)
+        cur_visual, cur_visual_col = cursor_visual_position(
+            lines,
+            chunks_per_line,
+            chunks_before,
+            cur_line,
+            cur_col,
+            edit_w,
+        )
+
+        if cur_visual < top_visual:
+            top_visual = cur_visual
+        elif cur_visual >= top_visual + edit_h:
+            top_visual = cur_visual - edit_h + 1
+        top_visual = min(max(top_visual, 0), max(0, len(visual_lines) - edit_h))
+
+        try:
+            edit_win.erase()
+            for visible_row in range(edit_h):
+                source_visual = top_visual + visible_row
+                if source_visual >= len(visual_lines):
+                    break
+                _, _, text = visual_lines[source_visual]
+                edit_win.addnstr(visible_row, 0, text, edit_w)
+            edit_win.refresh()
+            edit_win.move(
+                min(cur_visual - top_visual, edit_h - 1),
+                min(cur_visual_col, edit_w - 1),
+            )
+        except curses.error:
+            pass
         curses.curs_set(1)
 
         key = edit_win.get_wch()
@@ -312,20 +376,35 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
                     cur_line += 1
                     cur_col = 0
             elif key == curses.KEY_UP:
-                if cur_line > 0:
-                    cur_line -= 1
-                    lines = value.split("\n")
-                    cur_col = min(cur_col, len(lines[cur_line]))
+                cur_visual, cur_visual_col = cursor_visual_position(
+                    lines, chunks_per_line, chunks_before, cur_line, cur_col, edit_w
+                )
+                if cur_visual > 0:
+                    cur_visual -= 1
+                    target_line, target_start, _ = visual_lines[cur_visual]
+                    cur_line = target_line
+                    cur_col = min(target_start + cur_visual_col, len(lines[target_line]))
             elif key == curses.KEY_DOWN:
-                lines = value.split("\n")
-                if cur_line < len(lines) - 1:
-                    cur_line += 1
-                    cur_col = min(cur_col, len(lines[cur_line]))
-            elif key == curses.KEY_HOME:  # Début
-                cur_col = 0
-            elif key == curses.KEY_END:  # Fin
-                lines = value.split("\n")
-                cur_col = len(lines[cur_line]) if cur_line < len(lines) else 0
+                cur_visual, cur_visual_col = cursor_visual_position(
+                    lines, chunks_per_line, chunks_before, cur_line, cur_col, edit_w
+                )
+                if cur_visual < len(visual_lines) - 1:
+                    cur_visual += 1
+                    target_line, target_start, _ = visual_lines[cur_visual]
+                    cur_line = target_line
+                    cur_col = min(target_start + cur_visual_col, len(lines[target_line]))
+            elif key == curses.KEY_HOME:
+                cur_visual, _ = cursor_visual_position(
+                    lines, chunks_per_line, chunks_before, cur_line, cur_col, edit_w
+                )
+                _, cur_col, _ = visual_lines[cur_visual]
+            elif key == curses.KEY_END:
+                cur_visual, _ = cursor_visual_position(
+                    lines, chunks_per_line, chunks_before, cur_line, cur_col, edit_w
+                )
+                target_line, target_start, target_text = visual_lines[cur_visual]
+                cur_line = target_line
+                cur_col = min(target_start + len(target_text), len(lines[target_line]))
             elif key == curses.KEY_DC:  # Suppr
                 lines = value.split("\n")
                 if cur_col < len(lines[cur_line]):

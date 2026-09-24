@@ -54,6 +54,7 @@ Depuis l’écran principal, **Entrée** ouvre les détails de la tâche sélect
    - **Entrée** insère un saut de ligne ;
    - **Tab** valide la description et revient aux détails ;
    - **Échap** annule la modification de la description.
+   - Le texte revient automatiquement à la ligne lorsqu'il dépasse la largeur de la fenêtre.
 4. Appuyez sur **x** pour enregistrer la tâche, ou **q** pour revenir sans enregistrer.
 
 Sur une tâche **DONE**, les champs sont en lecture seule. Vous pouvez seulement naviguer, appuyer sur **u** pour la remettre en TODO, ou **q** pour revenir.
