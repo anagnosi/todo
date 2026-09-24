@@ -7,13 +7,13 @@ Interface en mode texte (curses) pour gérer des listes de tâches. Le fichier d
 Aucune dépendance externe. Il suffit de disposer de Python 3.
 
 ```bash
-chmod +x todo_tui.py
+chmod +x todo.py
 ```
 
 ## Utilisation
 
 ```bash
-python3 todo_tui.py <liste>.list
+python3 todo.py <liste>.list
 ```
 
 Le fichier de liste est créé automatiquement s'il n'existe pas. Les répertoires parents sont également créés si nécessaire.
