@@ -173,7 +173,7 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
     cat = task.get("category", "")
     due = task.get("due_date", "")
     prio = task.get("priority", 0)
-    line = f"[{task['id']}] P{prio:>5} {task_line[:50]}"
+    line = f"[{task['id']}] P{prio:>5} {task_line[:120]}"
     if cat:
         line += f" | {cat[:10]}"
     if due:
