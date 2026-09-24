@@ -27,7 +27,7 @@ Navigation et actions :
 - **u** : marquer comme TODO
 - **Tab** : basculer entre TODO et DONE
 - **i** : trier par ID (inverser en appuyant de nouveau)
-- **p** : trier par priorité (inverser en appuyant de nouveau)
+- **p** : trier par priorité croissante, les numéros les plus bas étant les plus prioritaires (inverser en appuyant de nouveau)
 - **e** : trier par échéance (inverser en appuyant de nouveau)
 - **r** : trier par date de réalisation (inverser en appuyant de nouveau)
 - **c** : filtrer les catégories par occurrence saisie
@@ -46,7 +46,7 @@ Le fichier est au format JSON, une liste d'objets (un par tâche) :
     "id": "1",
     "created": "2026-09-23T09:00:00",
     "modified": "2026-09-23T09:00:00",
-    "priority": 3,
+    "priority": 1,
     "status": "TODO",
     "done_at": "",
     "category": "courses",
@@ -58,7 +58,7 @@ Le fichier est au format JSON, une liste d'objets (un par tâche) :
 
 - `id` : identifiant unique et auto-incrémenté
 - `created` / `modified` : dates au format ISO 8601 (`YYYY-MM-DDTHH:MM:SS`)
-- `priority` : entier (plus élevé = plus prioritaire)
+- `priority` : entier (plus la valeur est basse, plus la tâche est prioritaire)
 - `status` : `TODO` ou `DONE`
 - `done_at` : date de traitement (vide si la tâche n'est pas encore traitée)
 - `category` : catégorie (vide si aucune catégorie)

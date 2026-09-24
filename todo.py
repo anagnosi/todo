@@ -152,7 +152,7 @@ def sort_rows(rows: list[dict], sort_by: str, status: str | None) -> list[dict]:
     elif sort_by == "modified":
         key = lambda r: r["modified"]
     elif sort_by == "priority":
-        key = lambda r: -r["priority"]
+        key = lambda r: r["priority"]
     elif sort_by == "done_at":
         key = lambda r: r["done_at"]
     elif sort_by == "due_date":
@@ -563,7 +563,7 @@ def run_tui(path: Path) -> None:
             sort_labels = {"id": "ID", "priority": "Priorité", "due_date": "Échéance", "done_at": "Réalisée"}
             sort_directions = {
                 "id": ("croissant", "décroissant"),
-                "priority": ("décroissant", "croissant"),
+                "priority": ("croissant", "décroissant"),
                 "due_date": ("croissant", "décroissant"),
                 "done_at": ("décroissant", "croissant"),
             }
