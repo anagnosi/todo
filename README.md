@@ -36,6 +36,30 @@ Navigation et actions :
 
 Les filtres de catégorie et de description peuvent être combinés. Le critère de tri et les filtres actifs s'affichent dans l'en-tête.
 
+## Écran d'édition des tâches
+
+Depuis l’écran principal, **Entrée** ouvre les détails de la tâche sélectionnée. Les champs disponibles sont :
+
+- **Priorité**
+- **Catégorie**
+- **Échéance**
+- **Description**
+
+### Modifier une tâche
+
+1. Utilisez **↑/↓** pour sélectionner un champ.
+2. Appuyez sur **Entrée** pour modifier le champ sélectionné.
+3. Pour la description, un éditeur multiligne s’ouvre :
+   - **↑/↓/←/→** déplacent le curseur ;
+   - **Entrée** insère un saut de ligne ;
+   - **Tab** valide la description et revient aux détails ;
+   - **Échap** annule la modification de la description.
+4. Appuyez sur **x** pour enregistrer la tâche, ou **q** pour revenir sans enregistrer.
+
+Sur une tâche **DONE**, les champs sont en lecture seule. Vous pouvez seulement naviguer, appuyer sur **u** pour la remettre en TODO, ou **q** pour revenir.
+
+Les échéances acceptées sont `YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS` et `YYYY-MM-DD HH:MM:SS`.
+
 ## Format d'un fichier de liste
 
 Le fichier est au format JSON, une liste d'objets (un par tâche) :
