@@ -532,7 +532,7 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
                 row += 2  # saut de ligne après le label
                 lines = real_value.split("\n") if real_value else [""]
                 desc_start = row
-                max_desc_lines = max(0, curses.LINES - 4 - desc_start)
+                max_desc_lines = max(0, curses.LINES - 5 - desc_start)
                 visible_lines = lines[desc_top:desc_top + max_desc_lines]
                 for line in visible_lines:
                     safe_add(row, line)
@@ -545,7 +545,7 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
                 safe_add(row, f"{prefix}{label}: {display}", attr)
                 row += 1
 
-        safe_add(curses.LINES - 2, " | ".join(meta_parts))
+        safe_add(curses.LINES - 3, " | ".join(meta_parts))
 
         help_text = "↑/↓: naviguer | Entrée: éditer | d: done | u: undone | x: sauvegarder | q: annuler"
         if is_done:
