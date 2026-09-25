@@ -619,9 +619,9 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
                 selected = (selected - 1) % len(editable_fields)
             elif key == curses.KEY_DOWN:
                 selected = (selected + 1) % len(editable_fields)
-            elif key == curses.KEY_PPAGE and selected == desc_index:
+            elif key == curses.KEY_PPAGE:
                 desc_top = max(0, desc_top - max_desc_lines)
-            elif key == curses.KEY_NPAGE and selected == desc_index:
+            elif key == curses.KEY_NPAGE:
                 desc_lines = editable_fields[desc_index][1].replace("\\n", "\n").split("\n")
                 desc_top = min(max(0, len(desc_lines) - max_desc_lines), desc_top + max_desc_lines)
             elif key in (10, 13, curses.KEY_ENTER) and not is_done:  # Entrée → commencer l'édition
