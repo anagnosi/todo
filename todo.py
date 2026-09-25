@@ -272,12 +272,12 @@ def prompt_task_filter(stdscr, current: str) -> str | None:
     return prompt_filter(stdscr, current, "Recherche description")
 
 
-def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modification de la tâche") -> str | None:
+def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modification de la tâche", initial_value: str | None = None) -> str | None:
     """Édite la tâche dans une fenêtre dédiée qui s'adapte à la taille de l'écran.
     Les flèches de direction permettent de déplacer le curseur dans le texte.
     Retourne la nouvelle valeur de la description, ou None si annulée.
     """
-    value = task.get("task") or ""
+    value = initial_value if initial_value is not None else task.get("task") or ""
     lines = value.split("\n")
     cur_line = 0
     cur_col = 0
@@ -636,7 +636,8 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
             elif key in (10, 13, curses.KEY_ENTER) and not is_done:  # Entrée → commencer l'édition
                 if selected == desc_index:
                     # Pour la Description, ouvrir une fenêtre dédiée
-                    new_task = edit_task_in_window(stdscr, task, path, title="Nouvelle tâche" if is_new else "Modification de la tâche")
+                    current_desc = editable_fields[desc_index][1]
+                    new_task = edit_task_in_window(stdscr, task, path, title="Nouvelle tâche" if is_new else "Modification de la tâche", initial_value=current_desc)
                     if new_task is not None:
                         editable_fields[desc_index] = ("Description", new_task)
                 else:
