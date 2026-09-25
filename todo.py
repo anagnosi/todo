@@ -279,8 +279,8 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
     """
     value = task.get("task") or ""
     lines = value.split("\n")
-    cur_line = len(lines) - 1
-    cur_col = len(lines[-1]) if lines else 0
+    cur_line = 0
+    cur_col = 0
     top_visual = 0
     curses.curs_set(1)
 
