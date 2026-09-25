@@ -316,11 +316,11 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
         lines = value.split("\n")
         if not lines:
             lines = [""]
-        win_h = max(5, min(curses.LINES - 2, 25))
-        win_w = max(10, min(curses.COLS - 2, 100))
-        if win_h >= curses.LINES or win_w >= curses.COLS:
+        win_h = max(5, curses.LINES - 4)
+        win_w = max(5, curses.COLS)
+        if curses.LINES < 9 or curses.COLS < 5:
             return value
-        win = curses.newwin(win_h, win_w, 1, 1)
+        win = curses.newwin(win_h, win_w, 1, 0)
         help_text = f"Entrée: saut de ligne | Tab: sauvegarder | Échap: annuler | Ligne {cur_line + 1}/{len(lines)}"
         try:
             win.box()
@@ -331,8 +331,8 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
             pass
 
         edit_h = max(1, win_h - 4)
-        edit_w = max(1, win_w - 4)
-        edit_win = curses.newwin(edit_h, edit_w, 3, 2)
+        edit_w = max(1, win_w - 2)
+        edit_win = curses.newwin(edit_h, edit_w, 2, 1)
         edit_win.keypad(True)
 
         cur_line = min(max(cur_line, 0), len(lines) - 1)
