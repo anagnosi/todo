@@ -545,8 +545,7 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
                 safe_add(row, f"{prefix}{label}: {display}", attr)
                 row += 1
 
-        # Afficher les métadonnées en bas
-        safe_add(curses.LINES - 3, "  " + " | ".join(meta_parts))
+        safe_add(curses.LINES - 2, " | ".join(meta_parts))
 
         help_text = "↑/↓: naviguer | Entrée: éditer | d: done | u: undone | x: sauvegarder | q: annuler"
         if is_done:
