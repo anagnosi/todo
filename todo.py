@@ -24,6 +24,40 @@ STATUS_TODO = "TODO"
 STATUS_DONE = "DONE"
 
 
+def safe_addnstr(screen, row: int, col: int, text: str, width: int,
+                 attr: int = curses.A_NORMAL) -> None:
+    if width <= 0 or row < 0 or col < 0:
+        return
+    try:
+        max_rows, max_cols = screen.getmaxyx()
+    except (AttributeError, curses.error):
+        max_rows, max_cols = curses.LINES, curses.COLS
+    if row >= max_rows or col >= max_cols:
+        return
+    width = min(width, max_cols - col)
+    if row == max_rows - 1 and col + width >= max_cols:
+        width = max(0, width - 1)
+    if width <= 0:
+        return
+    try:
+        screen.addnstr(row, col, text, width, attr)
+    except curses.error:
+        pass
+
+
+def safe_move(screen, row: int, col: int) -> None:
+    try:
+        max_rows, max_cols = screen.getmaxyx()
+    except (AttributeError, curses.error):
+        max_rows, max_cols = curses.LINES, curses.COLS
+    row = min(max(row, 0), max(0, max_rows - 1))
+    col = min(max(col, 0), max(0, max_cols - 1))
+    try:
+        screen.move(row, col)
+    except curses.error:
+        pass
+
+
 def now_iso() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
@@ -164,10 +198,12 @@ def sort_rows(rows: list[dict], sort_by: str, status: str | None) -> list[dict]:
 
 
 def draw_header(stdscr, text: str, width: int) -> None:
-    stdscr.addnstr(0, 0, text, width, curses.A_BOLD | curses.A_REVERSE)
+    safe_addnstr(stdscr, 0, 0, text, width, curses.A_BOLD | curses.A_REVERSE)
 
 
 def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
+    if row >= curses.LINES - 1:
+        return
     attr = curses.A_REVERSE if selected else curses.A_NORMAL
     task_line = task["task"].splitlines()[0] if task["task"] else ""
     cat = task.get("category", "")
@@ -180,12 +216,12 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
         line += f" | {due[:10]}"
     if task.get("status") == STATUS_DONE and task.get("done_at"):
         line += f" | Réalisée: {task['done_at'][:10]}"
-    stdscr.addnstr(row, 0, line, width, attr)
+    safe_addnstr(stdscr, row, 0, line, width, attr)
 
 
 def draw_help(stdscr, width: int) -> None:
     help_text = "↑/↓: naviguer | Entrée: détails | n: nouveau | i: ID | p: priorité | e: échéance | r: réalisée | c: catégorie | /: chercher | d: done | u: undone | Tab: TODO/DONE | q: quitter"
-    stdscr.addnstr(curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
+    safe_addnstr(stdscr, curses.LINES - 1, 0, help_text, width, curses.A_REVERSE)
 
 
 def matches_occurrence(value: str | None, query: str) -> bool:
@@ -208,10 +244,10 @@ def prompt_filter(stdscr, current: str, label: str) -> str | None:
 
     curses.curs_set(1)
     while True:
-        stdscr.move(row, 0)
+        safe_move(stdscr, row, 0)
         stdscr.clrtoeol()
-        stdscr.addnstr(row, 0, prompt + value, curses.COLS, curses.A_REVERSE)
-        stdscr.move(row, min(len(prompt) + len(value), curses.COLS - 1))
+        safe_addnstr(stdscr, row, 0, prompt + value, curses.COLS, curses.A_REVERSE)
+        safe_move(stdscr, row, min(len(prompt) + len(value), curses.COLS - 1))
         stdscr.refresh()
 
         key = stdscr.get_wch()
@@ -280,14 +316,16 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
         lines = value.split("\n")
         if not lines:
             lines = [""]
-        win_h = max(5, curses.LINES - 2)
-        win_w = max(10, curses.COLS - 2)
+        win_h = max(5, min(curses.LINES - 2, 25))
+        win_w = max(10, min(curses.COLS - 2, 100))
+        if win_h >= curses.LINES or win_w >= curses.COLS:
+            return value
         win = curses.newwin(win_h, win_w, 1, 1)
         help_text = f"Entrée: saut de ligne | Tab: sauvegarder | Échap: annuler | Ligne {cur_line + 1}/{len(lines)}"
         try:
             win.box()
-            win.addnstr(0, 2, f"{title} [{task['id']}]", win_w - 4, curses.A_BOLD)
-            win.addnstr(win_h - 2, 2, help_text, win_w - 4, curses.A_REVERSE)
+            safe_addnstr(win, 0, 2, f"{title} [{task['id']}]", win_w - 4, curses.A_BOLD)
+            safe_addnstr(win, win_h - 2, 2, help_text, win_w - 4, curses.A_REVERSE)
             win.refresh()
         except curses.error:
             pass
@@ -323,12 +361,10 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
                 if source_visual >= len(visual_lines):
                     break
                 _, _, text = visual_lines[source_visual]
-                edit_win.addnstr(visible_row, 0, text, edit_w)
+                safe_addnstr(edit_win, visible_row, 0, text, edit_w)
             edit_win.refresh()
-            edit_win.move(
-                min(cur_visual - top_visual, edit_h - 1),
-                min(cur_visual_col, edit_w - 1),
-            )
+            safe_move(edit_win, min(cur_visual - top_visual, edit_h - 1),
+                      min(cur_visual_col, edit_w - 1))
         except curses.error:
             pass
         curses.curs_set(1)
@@ -393,6 +429,22 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
                     target_line, target_start, _ = visual_lines[cur_visual]
                     cur_line = target_line
                     cur_col = min(target_start + cur_visual_col, len(lines[target_line]))
+            elif key == curses.KEY_PPAGE:
+                cur_visual, cur_visual_col = cursor_visual_position(
+                    lines, chunks_per_line, chunks_before, cur_line, cur_col, edit_w
+                )
+                target_visual = max(0, cur_visual - edit_h)
+                target_line, target_start, _ = visual_lines[target_visual]
+                cur_line = target_line
+                cur_col = min(target_start + cur_visual_col, len(lines[target_line]))
+            elif key == curses.KEY_NPAGE:
+                cur_visual, cur_visual_col = cursor_visual_position(
+                    lines, chunks_per_line, chunks_before, cur_line, cur_col, edit_w
+                )
+                target_visual = min(len(visual_lines) - 1, cur_visual + edit_h)
+                target_line, target_start, _ = visual_lines[target_visual]
+                cur_line = target_line
+                cur_col = min(target_start + cur_visual_col, len(lines[target_line]))
             elif key == curses.KEY_HOME:
                 cur_visual, _ = cursor_visual_position(
                     lines, chunks_per_line, chunks_before, cur_line, cur_col, edit_w
@@ -450,6 +502,11 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
     desc_index = 3  # Description est le dernier champ éditable
     selected = 0  # Priorité par défaut
     editing = False
+    desc_top = 0
+    max_desc_lines = 0
+
+    def safe_add(row: int, text: str, attr: int = curses.A_NORMAL) -> None:
+        safe_addnstr(stdscr, row, 0, text, curses.COLS, attr)
 
     while True:
         is_done = task.get("status") == STATUS_DONE
@@ -463,7 +520,7 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
 
         stdscr.erase()
         title = "Nouvelle tâche" if is_new else f"Détails de la tâche [{task['id']}]"
-        stdscr.addnstr(0, 0, title, curses.COLS, curses.A_BOLD | curses.A_REVERSE)
+        safe_add(0, title, curses.A_BOLD | curses.A_REVERSE)
 
         row = 2
         for i, (label, value) in enumerate(editable_fields):
@@ -471,24 +528,30 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
             prefix = "> " if i == selected else "  "
             if i == desc_index:  # Description : afficher avec label
                 real_value = value.replace("\\n", "\n")
-                stdscr.addnstr(row, 0, f"{prefix}{label}:", curses.COLS, attr)
+                safe_add(row, f"{prefix}{label}:", attr)
                 row += 2  # saut de ligne après le label
                 lines = real_value.split("\n") if real_value else [""]
-                for line in lines:
-                    stdscr.addnstr(row, 0, line, curses.COLS, curses.A_NORMAL)
+                desc_start = row
+                max_desc_lines = max(0, curses.LINES - 4 - desc_start)
+                visible_lines = lines[desc_top:desc_top + max_desc_lines]
+                for line in visible_lines:
+                    safe_add(row, line)
                     row += 1
+                if max_desc_lines > 0 and len(lines) > max_desc_lines:
+                    hidden = len(lines) - max_desc_lines
+                    safe_add(row, f"... {hidden} ligne(s) masquée(s) | Page haut/bas")
             else:  # Autres champs : une seule ligne
                 display = value.replace("\n", " / ")
-                stdscr.addnstr(row, 0, f"{prefix}{label}: {display}", curses.COLS, attr)
+                safe_add(row, f"{prefix}{label}: {display}", attr)
                 row += 1
 
         # Afficher les métadonnées en bas
-        stdscr.addnstr(curses.LINES - 3, 0, "  " + " | ".join(meta_parts), curses.COLS, curses.A_NORMAL)
+        safe_add(curses.LINES - 3, "  " + " | ".join(meta_parts))
 
         help_text = "↑/↓: naviguer | Entrée: éditer | d: done | u: undone | x: sauvegarder | q: annuler"
         if is_done:
             help_text = "↑/↓: naviguer | u: undone | q: revenir"
-        stdscr.addnstr(curses.LINES - 1, 0, help_text, curses.COLS, curses.A_REVERSE)
+        safe_add(curses.LINES - 1, help_text, curses.A_REVERSE)
 
         if editing and not is_done:
             curses.curs_set(1)
@@ -508,7 +571,12 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
                     actual_row += 1
             if selected == desc_index:
                 actual_row += 2 + len(lines) - 1
-            stdscr.move(actual_row, col)
+            actual_row = min(max(actual_row, 0), max(0, curses.LINES - 4))
+            col = min(max(col, 0), max(0, curses.COLS - 1))
+            try:
+                stdscr.move(actual_row, col)
+            except curses.error:
+                pass
         else:
             curses.curs_set(0)
 
@@ -552,7 +620,12 @@ def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> N
                 selected = (selected - 1) % len(editable_fields)
             elif key == curses.KEY_DOWN:
                 selected = (selected + 1) % len(editable_fields)
-            elif key == 10 and not is_done:  # Entrée → commencer l'édition
+            elif key == curses.KEY_PPAGE and selected == desc_index:
+                desc_top = max(0, desc_top - max_desc_lines)
+            elif key == curses.KEY_NPAGE and selected == desc_index:
+                desc_lines = editable_fields[desc_index][1].replace("\\n", "\n").split("\n")
+                desc_top = min(max(0, len(desc_lines) - max_desc_lines), desc_top + max_desc_lines)
+            elif key in (10, 13, curses.KEY_ENTER) and not is_done:  # Entrée → commencer l'édition
                 if selected == desc_index:
                     # Pour la Description, ouvrir une fenêtre dédiée
                     new_task = edit_task_in_window(stdscr, task, path, title="Nouvelle tâche" if is_new else "Modification de la tâche")
@@ -610,7 +683,9 @@ def create_new_task(stdscr, path: Path) -> None:
 
 def run_tui(path: Path) -> None:
     def main(stdscr):
+        stdscr.keypad(True)
         curses.curs_set(0)
+        curses.noecho()
         selected = 0
         show_done = False
         sort_key = "id"
@@ -656,7 +731,7 @@ def run_tui(path: Path) -> None:
             draw_help(stdscr, curses.COLS)
 
             if not current:
-                stdscr.addstr(2, 0, "(vide)")
+                safe_addnstr(stdscr, 2, 0, "(vide)", curses.COLS)
             else:
                 if selected >= len(current):
                     selected = 0
