@@ -484,6 +484,15 @@ def edit_task_in_window(stdscr, task: dict, path: Path, title: str = "Modificati
             lines[cur_line] = lines[cur_line][:cur_col] + key + lines[cur_line][cur_col:]
             value = "\n".join(lines)
             cur_col += 1
+            # Retour à la ligne automatique si la ligne dépasse la largeur
+            if cur_col >= edit_w:
+                lines = value.split("\n")
+                overflow = lines[cur_line][edit_w:]
+                lines[cur_line] = lines[cur_line][:edit_w]
+                lines.insert(cur_line + 1, overflow)
+                value = "\n".join(lines)
+                cur_line += 1
+                cur_col = len(overflow)
 
 
 def show_task_details(stdscr, task: dict, path: Path, is_new: bool = False) -> None:
