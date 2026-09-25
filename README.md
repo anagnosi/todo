@@ -51,6 +51,7 @@ Depuis l’écran principal, **Entrée** ouvre les détails de la tâche sélect
 2. Appuyez sur **Entrée** pour modifier le champ sélectionné.
 3. Pour la description, un éditeur multiligne s’ouvre :
    - **↑/↓/←/→** déplacent le curseur ;
+   - **Page haut/Page bas** déplacent le curseur d’une page ;
    - **Entrée** insère un saut de ligne ;
    - **Tab** valide la description et revient aux détails ;
    - **Échap** annule la modification de la description.
