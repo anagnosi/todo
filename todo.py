@@ -209,13 +209,24 @@ def draw_task(stdscr, row: int, task: dict, selected: bool, width: int) -> None:
     cat = task.get("category", "")
     due = task.get("due_date", "")
     prio = task.get("priority", 0)
-    line = f"[{task['id']}] P{prio:>5} {task_line[:120]}"
-    if cat:
-        line += f" | {cat[:10]}"
-    if due:
-        line += f" | {due[:10]}"
-    if task.get("status") == STATUS_DONE and task.get("done_at"):
-        line += f" | Réalisée: {task['done_at'][:10]}"
+    done_at = task.get("done_at", "") if task.get("status") == STATUS_DONE else ""
+
+    # Fixed column widths
+    id_col = 6          # [id]
+    prio_col = 7        # Pxxxxx
+    desc_col = 60       # description
+    cat_col = 25        # category
+    due_col = 15        # due date
+    done_col = 15       # done date
+
+    id_part = f"[{task['id']}]".ljust(id_col)
+    prio_part = f"P{prio}".ljust(prio_col)
+    desc_part = task_line[:desc_col].ljust(desc_col)
+    cat_part = cat[:cat_col].ljust(cat_col)
+    due_part = due[:due_col].ljust(due_col)
+    done_part = (done_at[:10] if done_at else "").ljust(done_col)
+
+    line = f"{id_part} {prio_part} {desc_part} {cat_part} {due_part} {done_part}"
     safe_addnstr(stdscr, row, 0, line, width, attr)
 
 
